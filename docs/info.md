@@ -9,12 +9,12 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
+Multiplies two 2x2 matrices, outputs a 2x2 matrix. Input values are FP8, output values are BFloat16.
 
 ## How to test
 
-Explain how to use your project
+Pending...
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+None
