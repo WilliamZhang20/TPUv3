@@ -48,9 +48,9 @@ pinout:
   uo[7]: "OUT7"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
+  uio[0]: "LOAD_EN"
+  uio[1]: "TRANSPOSE"
+  uio[2]: "RELU_ACTIVATION"
   uio[3]: ""
   uio[4]: ""
   uio[5]: ""
