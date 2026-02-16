@@ -27,29 +27,20 @@ module PE (
 
     localparam FRAC_BITS = 8;
     
-    // Optimized exponent calculation (reduced adder depth)
-    wire signed [5:0] exp_sum_raw = (denorm_a ? 6'sd1 : {2'b0, exp_a}) + 
-                                     (denorm_b ? 6'sd1 : {2'b0, exp_b});
-    wire signed [6:0] exp_sum = {1'b0, exp_sum_raw} - 7'sd14;
+    // Simplified exponent calculation (reuse adder)
+    wire signed [4:0] exp_a_add = denorm_a ? 5'sd1 : {1'b0, exp_a};
+    wire signed [4:0] exp_b_add = denorm_b ? 5'sd1 : {1'b0, exp_b};
+    wire signed [5:0] exp_add_only = exp_a_add + exp_b_add;
+    wire signed [6:0] exp_sum = {1'b0, exp_add_only} - 7'sd14;
     wire signed [6:0] shift_right = 7'sd6 - FRAC_BITS - exp_sum;
     
-    // Optimized shifter with clamping (cleaner synthesis)
-    wire [17:0] prod_extended;
-    assign prod_extended = {10'd0, mant_prod};
-    
+    // Simplified shifter with clamping
     reg [17:0] aligned_prod;
     always @(*) begin
-        if (shift_right[6]) begin // Negative = left shift
-            if (shift_right < -7'sd10)
-                aligned_prod = 18'h3FFFF;  // Saturate
-            else
-                aligned_prod = prod_extended << (-shift_right[4:0]);
-        end else begin // Positive = right shift
-            if (shift_right > 7'sd17)
-                aligned_prod = 18'd0;      // Underflow
-            else
-                aligned_prod = prod_extended >> shift_right[4:0];
-        end
+        if (shift_right[6])  // Negative = left shift
+            aligned_prod = (shift_right < -7'sd10) ? 18'h3FFFF : ({10'd0, mant_prod} << (-shift_right[3:0]));
+        else  // Positive = right shift
+            aligned_prod = (shift_right > 7'sd17) ? 18'd0 : ({10'd0, mant_prod} >> shift_right[4:0]);
     end
 
     // ----------------------- Accumulator (2's complement) -----------------------
