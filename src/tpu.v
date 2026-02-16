@@ -24,7 +24,7 @@ module tt_um_tpu (
     wire [7:0] weight0, weight1, weight2, weight3;
     wire [7:0] input0, input1, input2, input3;
 
-    wire [15:0] outputs [0:3]; // raw accumulations (16-bit)
+    wire signed [17:0] outputs [0:3]; // raw accumulations (18-bit INT)
     wire [7:0] out_data; // sent to CPU
 
     // Control signals

@@ -6,7 +6,7 @@ module control_unit (
     input wire load_en,
 
     // Systolic array feedback for output selection
-    input wire signed [15:0] c00, c01, c10, c11,
+    input wire signed [17:0] c00, c01, c10, c11,
 
     // Memory address control
     output reg [2:0] mem_addr,
@@ -27,6 +27,13 @@ module control_unit (
     // Buffer of output after clearing previous
     reg [7:0] tail_hold;
 
+    // BF16 converters (moved from PE to output stage)
+    wire [15:0] bf16_c00, bf16_c01, bf16_c10, bf16_c11;
+    int18_to_bf16 conv_c00 (.acc(c00), .bf16(bf16_c00));
+    int18_to_bf16 conv_c01 (.acc(c01), .bf16(bf16_c01));
+    int18_to_bf16 conv_c10 (.acc(c10), .bf16(bf16_c10));
+    int18_to_bf16 conv_c11 (.acc(c11), .bf16(bf16_c11));
+
     // State machine and control signal generation
     always @(posedge clk) begin
         if (rst) begin
@@ -37,10 +44,10 @@ module control_unit (
             // Handle memory addressing
             if (load_en) begin
                 mem_addr <= mem_addr + 1;
-                
+
                 if (mem_addr == 3'b101) begin
                     mmu_cycle <= 0; // systolic cycling begins at 5th load
-                    tail_hold <= c11[7:0];
+                    tail_hold <= bf16_c11[7:0];
                 end else begin
                     mmu_cycle <= mmu_cycle + 1;
                     if (mem_addr == 3'b111) begin 
@@ -58,13 +65,13 @@ module control_unit (
     always @(*) begin
         data_out = 8'b0;
         case (mem_addr)
-            3'b000: data_out = c00[15:8];
-            3'b001: data_out = c00[7:0];
-            3'b010: data_out = c01[15:8];
-            3'b011: data_out = c01[7:0];
-            3'b100: data_out = c10[15:8];
-            3'b101: data_out = c10[7:0];
-            3'b110: data_out = c11[15:8];
+            3'b000: data_out = bf16_c00[15:8];
+            3'b001: data_out = bf16_c00[7:0];
+            3'b010: data_out = bf16_c01[15:8];
+            3'b011: data_out = bf16_c01[7:0];
+            3'b100: data_out = bf16_c10[15:8];
+            3'b101: data_out = bf16_c10[7:0];
+            3'b110: data_out = bf16_c11[15:8];
             3'b111: data_out = tail_hold;
         endcase
 

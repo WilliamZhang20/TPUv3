@@ -6,7 +6,7 @@ module PE (
     input  wire [7:0]  b_in,
     output reg  [7:0]  a_out,
     output reg  [7:0]  b_out,
-    output wire [15:0] c_out
+    output wire signed [17:0] c_out
 );
 
     // ----------------------- FP8 E4M3 decode -----------------------
@@ -65,14 +65,7 @@ module PE (
         end
     end
 
-    // ----------------------- INT18 → BF16 (combinational) -----------------------
-    wire [15:0] bf16_c;
-    int18_to_bf16 convert (
-        .acc(acc), 
-        .bf16(bf16_c)
-    );
-
-    assign c_out = bf16_c;
-
+    // Output raw accumulator (BF16 conversion moved to output stage)
+    assign c_out = acc;
 
 endmodule
