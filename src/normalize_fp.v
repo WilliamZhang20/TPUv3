@@ -10,7 +10,6 @@ module int18_to_bf16_lzd #(
     wire [17:0] mag;
     wire [4:0] lz;
     wire signed [8:0] exp_unbiased;
-    reg [7:0] exp;
     wire [6:0] mant;
     wire [17:0] normalized;
 
