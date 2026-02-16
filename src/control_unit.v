@@ -37,19 +37,19 @@ module control_unit (
             // Handle memory addressing
             if (load_en) begin
                 mem_addr <= mem_addr + 1;
+                
+                if (mem_addr == 3'b101) begin
+                    mmu_cycle <= 0; // systolic cycling begins at 5th load
+                    tail_hold <= c11[7:0];
+                end else begin
+                    mmu_cycle <= mmu_cycle + 1;
+                    if (mem_addr == 3'b111) begin 
+                        mem_addr <= 0;
+                    end
+                end
             end else begin
                 mem_addr <= 0;
                 mmu_cycle <= 0;
-            end
-
-            if (mem_addr == 3'b101) begin
-                mmu_cycle <= 0; // systolic cycling begins at 5th load
-                tail_hold <= c11[7:0];
-            end else begin
-                mmu_cycle <= mmu_cycle + 1;
-                if (mem_addr == 3'b111) begin 
-                    mem_addr <= 0;
-                end
             end
         end
     end

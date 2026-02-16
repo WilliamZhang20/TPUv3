@@ -90,9 +90,9 @@ async def read_output(dut, hadamard=0):
     results = []
     for _ in range(4):
         await RisingEdge(dut.clk)
-        high = dut.uo_out.value.integer
+        high = dut.uo_out.value.to_unsigned()
         await RisingEdge(dut.clk)
-        low = dut.uo_out.value.integer
+        low = dut.uo_out.value.to_unsigned()
         combined = (high << 8) | low
         float_val = bf16_to_float(combined)
         results.append(float_val)
@@ -115,11 +115,11 @@ async def parallel_load_read(dut, A, B, instr=(0, 0, 0), next_instr=(0, 0, 0)):
             # Feed either real data or dummy zeros
             dut.ui_in.value = fp8_e4m3_encode(inputs[idx0]) if inputs else 0
             await ClockCycles(dut.clk, 1)
-            high = dut.uo_out.value.integer
+            high = dut.uo_out.value.to_unsigned()
             
             dut.ui_in.value = fp8_e4m3_encode(inputs[idx1]) if inputs else 0
             await ClockCycles(dut.clk, 1)
-            low = dut.uo_out.value.integer
+            low = dut.uo_out.value.to_unsigned()
 
             combined = (high << 8) | low
             float_val = bf16_to_float(combined)
@@ -130,7 +130,7 @@ async def parallel_load_read(dut, A, B, instr=(0, 0, 0), next_instr=(0, 0, 0)):
 @cocotb.test()
 async def test_gemm(dut):
     dut._log.info("Start")
-    clock = Clock(dut.clk, 20, units="ns")
+    clock = Clock(dut.clk, 40, unit="ns")
     cocotb.start_soon(clock.start())
 
     # Reset
@@ -209,7 +209,7 @@ async def accumulate_matrix_output(dut, results_large, i, j, transpose=0, A_bloc
     for idx in range(8):
         dut.ui_in.value = input_stream[idx]
         await ClockCycles(dut.clk, 1)
-        partial_outputs.append(dut.uo_out.value.integer)
+        partial_outputs.append(dut.uo_out.value.to_unsigned())
 
     # Decode BF16 outputs → float
     combined_outputs = []
