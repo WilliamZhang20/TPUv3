@@ -27,12 +27,12 @@ module PE (
 
     localparam FRAC_BITS = 8;
     
-    // Simplified exponent calculation (reuse adder)
-    wire signed [4:0] exp_a_add = denorm_a ? 5'sd1 : {1'b0, exp_a};
-    wire signed [4:0] exp_b_add = denorm_b ? 5'sd1 : {1'b0, exp_b};
-    wire signed [5:0] exp_add_only = exp_a_add + exp_b_add;
-    wire signed [6:0] exp_sum = {1'b0, exp_add_only} - 7'sd14;
-    wire signed [6:0] shift_right = 7'sd6 - FRAC_BITS - exp_sum;
+    // Optimized shift calculation: merged 3 adders into 1 expression
+    // shift_right = 6 - FRAC_BITS - (exp_a + exp_b - 14) = 20 - FRAC_BITS - exp_a - exp_b
+    // With FRAC_BITS=8: shift_right = 12 - exp_a - exp_b (where denorm uses exp=1)
+    wire signed [6:0] shift_right = 7'sd12 - 
+                                    (denorm_a ? 7'sd1 : {3'sd0, exp_a}) - 
+                                    (denorm_b ? 7'sd1 : {3'sd0, exp_b});
     
     // Simplified shifter with clamping
     reg [17:0] aligned_prod;
@@ -50,20 +50,24 @@ module PE (
         prod_sign ? -aligned_prod : aligned_prod;
 
     always @(posedge clk) begin
-        a_out <= a_in;
-        b_out <= b_in;
-
-        if (rst)
+        if (rst) begin
+            a_out <= 8'd0;
+            b_out <= 8'd0;
             acc <= 18'sd0;
-        else if (clear)
-            acc <= signed_prod; 
-        else
-            acc <= acc + signed_prod;
+        end else begin
+            a_out <= a_in;
+            b_out <= b_in;
+            
+            if (clear)
+                acc <= signed_prod; 
+            else
+                acc <= acc + signed_prod;
+        end
     end
 
     // ----------------------- INT18 → BF16 (combinational) -----------------------
     wire [15:0] bf16_c;
-    int18_to_bf16_lzd #(.FRAC_BITS(FRAC_BITS)) convert (
+    int18_to_bf16 convert (
         .acc(acc), 
         .bf16(bf16_c)
     );
